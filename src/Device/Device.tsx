@@ -2,19 +2,20 @@ import { useEffect, useState, type FC } from 'react';
 import './Device.scss';
 import type { Mqtt } from '../utils/mqtt';
 
-type TDayState = [boolean, boolean, boolean, boolean, boolean, boolean, boolean];
-const initialState: TDayState = [false, false, false, false, false, false, false];
+export type TDayState = [boolean, boolean, boolean, boolean, boolean, boolean, boolean];
+const emptyState: TDayState = [false, false, false, false, false, false, false];
 
 type TDeviceProps = {
   mqtt: Mqtt | undefined;
+  initialState: TDayState | undefined;
 };
 
-const Device: FC<TDeviceProps> = ({ mqtt }) => {
-  const [yourLights, setYourLights] = useState<TDayState>(initialState);
-  const [friendLights, setFriendLights] = useState<TDayState>(initialState);
+const Device: FC<TDeviceProps> = ({ mqtt, initialState }) => {
+  const [yourLights, setYourLights] = useState<TDayState>(initialState || emptyState);
+  const [friendLights, setFriendLights] = useState<TDayState>(initialState || emptyState);
 
   const messageCallback = (message: string) => {
-    const receivedLights = message.split(',').map(value => value === 'true') as TDayState;
+    const receivedLights = message.split(',').map((value) => value === 'true') as TDayState;
     setFriendLights(receivedLights);
   };
 
@@ -23,6 +24,12 @@ const Device: FC<TDeviceProps> = ({ mqtt }) => {
       mqtt.subscribeToMessages(messageCallback);
     }
   }, [mqtt]);
+
+  useEffect(() => {
+    if (initialState) {
+      setYourLights(initialState);
+    }
+  }, [initialState]);
 
   const handleDayButtonClick = (index: number) => {
     const newDays = [...yourLights] as TDayState;
@@ -35,10 +42,10 @@ const Device: FC<TDeviceProps> = ({ mqtt }) => {
   };
 
   const handleResetClick = () => {
-    setYourLights(initialState);
+    setYourLights(emptyState);
 
     if (mqtt) {
-      mqtt.sendMessage(initialState.toString());
+      mqtt.sendMessage(emptyState.toString());
     }
   };
 
